@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Docker builds set STANDALONE=1 for a slim image; other hosts use `next start`.
+  output: process.env.STANDALONE === "1" ? "standalone" : undefined,
   poweredByHeader: false,
   experimental: { serverActions: { bodySizeLimit: "6mb" } },
   images: { remotePatterns: [{ protocol: "https", hostname: "i.ytimg.com" }] },

@@ -12,7 +12,7 @@ WORKDIR /app
 RUN apk add --no-cache openssl
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_TELEMETRY_DISABLED=1 STANDALONE=1
 RUN npx prisma generate && npm run build
 
 # ---- run ----

@@ -12,7 +12,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "start:render": "prisma db push --skip-generate && tsx prisma/seed.ts && next start"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -41,5 +42,8 @@
     "tsx": "^4.23.15",
     "typescript": "5.9",
     "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
