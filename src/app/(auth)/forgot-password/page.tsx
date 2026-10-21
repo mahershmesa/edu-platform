@@ -6,6 +6,7 @@ import { displayPhone } from "@/lib/phone";
 import { buttonClass } from "@/components/ui/button";
 
 export const metadata: Metadata = { title: "نسيت كلمة المرور" };
+export const dynamic = "force-dynamic";
 
 export default async function ForgotPasswordPage() {
   const s = await getSettings();

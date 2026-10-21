@@ -96,7 +96,7 @@ export default async function AccountPage() {
           </div>
           {isStudent && (
             <Badge tone={devices.length >= settings.maxDevices ? "amber" : "green"}>
-              {formatNumber(devices.length)} / {formatNumber(settings.maxDevices)}
+              {formatNumber(devices.length)} من {formatNumber(settings.maxDevices)}
             </Badge>
           )}
         </div>

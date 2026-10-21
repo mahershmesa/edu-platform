@@ -54,6 +54,11 @@ export async function redeemCode(studentId: string, rawCode: string, targetCours
           ])
         : [[], []];
 
+      // A student re-entering a code they already used gets a clear message even if the code is now exhausted.
+      const scopeIds = targetCourseId ? [targetCourseId] : publishedIds;
+      const usedIds = new Set(used.map((u) => u.courseId));
+      if (found && scopeIds.length > 0 && scopeIds.every((id) => usedIds.has(id))) throw new RedeemFail(REDEEM_ERRORS.ALREADY_USED);
+
       const check = checkRedeem({
         code: found ? { ...found, courseIds: publishedIds } : null,
         usedCourseIdsByStudent: used.map((u) => u.courseId),
