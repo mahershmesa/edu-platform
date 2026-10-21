@@ -1,0 +1,399 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserType {
+  ADMIN // مدير النظام: كل الصلاحيات
+  STAFF // موظف إدارة: صلاحيات حسب الدور
+  TEACHER
+  STUDENT
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String?    @unique
+  phone        String?    @unique
+  passwordHash String
+  type         UserType
+  status       UserStatus @default(ACTIVE)
+  avatarUrl    String?
+  bio          String?
+  governorate  String?
+  roleId       String?
+  role         Role?      @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  lastLoginAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  // خاص بالمعلم
+  manualSuspended Boolean @default(false) // إيقاف يدوي من الإدارة
+  billingSuspended Boolean @default(false) // إيقاف تلقائي بسبب فاتورة متأخرة
+
+  sessions        Session[]          @relation("SessionUser")
+  impersonations  Session[]          @relation("SessionImpersonator")
+  devices         Device[]
+  courses         Course[]           @relation("TeacherCourses")
+  enrollments     Enrollment[]
+  codes           AccessCode[]       @relation("TeacherCodes")
+  redemptions     CodeRedemption[]
+  invoices        TeacherInvoice[]
+  attempts        ExamAttempt[]
+  files           MediaFile[]
+  auditLogs       AuditLog[]         @relation("AuditActor")
+  lessonProgress  LessonProgress[]
+
+  @@index([type, status])
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String
+  slug        String           @unique
+  description String?
+  isSystem    Boolean          @default(false)
+  isActive    Boolean          @default(true)
+  permissions RolePermission[]
+  users       User[]
+  createdAt   DateTime         @default(now())
+}
+
+model RolePermission {
+  roleId     String
+  permission String
+  role       Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permission])
+}
+
+model Device {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fingerprint String
+  label       String
+  lastSeenAt  DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  sessions    Session[]
+
+  @@unique([userId, fingerprint])
+}
+
+model Session {
+  id             String   @id @default(cuid())
+  tokenHash      String   @unique
+  userId         String
+  user           User     @relation("SessionUser", fields: [userId], references: [id], onDelete: Cascade)
+  deviceId       String?
+  device         Device?  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  // عند الدخول بصفة معلم: المدير الذي يتصفح
+  impersonatorId String?
+  impersonator   User?    @relation("SessionImpersonator", fields: [impersonatorId], references: [id], onDelete: Cascade)
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  parentId    String?
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Category[] @relation("CategoryTree")
+  name        String
+  description String?
+  imageUrl    String?
+  introVideo  String?
+  isActive    Boolean    @default(true)
+  sortOrder   Int        @default(0)
+  courses     Course[]
+  createdAt   DateTime   @default(now())
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  HIDDEN
+}
+
+model Course {
+  id          String       @id @default(cuid())
+  teacherId   String
+  teacher     User         @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: Restrict)
+  categoryId  String
+  category    Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  title       String
+  description String?
+  price       Int          @default(0) // دينار عراقي
+  imageUrl    String?
+  status      CourseStatus @default(DRAFT)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  lessons     Lesson[]
+  enrollments Enrollment[]
+  exams       Exam[]
+  codeLinks   AccessCodeCourse[]
+  redemptions CodeRedemption[]
+
+  @@index([teacherId])
+  @@index([categoryId])
+}
+
+model Lesson {
+  id          String    @id @default(cuid())
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  sortOrder   Int       @default(0)
+  durationMin Int?
+  youtubeId   String
+  isFree      Boolean   @default(false)
+  isPublished Boolean   @default(true)
+  attachmentId String?
+  attachment  MediaFile? @relation(fields: [attachmentId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  progress    LessonProgress[]
+  exams       Exam[]
+
+  @@index([courseId, sortOrder])
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  REVOKED
+}
+
+model Enrollment {
+  id        String           @id @default(cuid())
+  studentId String
+  student   User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  codeId    String?
+  code      AccessCode?      @relation(fields: [codeId], references: [id], onDelete: SetNull)
+  status    EnrollmentStatus @default(ACTIVE)
+  createdAt DateTime         @default(now())
+
+  @@unique([studentId, courseId])
+}
+
+model LessonProgress {
+  studentId   String
+  student     User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  @@id([studentId, lessonId])
+}
+
+model AccessCode {
+  id         String    @id @default(cuid())
+  code       String    @unique
+  teacherId  String
+  teacher    User      @relation("TeacherCodes", fields: [teacherId], references: [id], onDelete: Cascade)
+  groupName  String?
+  usageLimit Int? // فارغ = بلا حد
+  usedCount  Int       @default(0)
+  expiresAt  DateTime?
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+
+  courses     AccessCodeCourse[]
+  redemptions CodeRedemption[]
+  enrollments Enrollment[]
+
+  @@index([teacherId, groupName])
+}
+
+model AccessCodeCourse {
+  codeId   String
+  courseId String
+  code     AccessCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  course   Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@id([codeId, courseId])
+}
+
+model CodeRedemption {
+  id        String     @id @default(cuid())
+  codeId    String
+  code      AccessCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  studentId String
+  student   User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+
+  @@unique([codeId, studentId, courseId])
+}
+
+model CodeAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+enum QuestionType {
+  SINGLE
+  MULTIPLE
+  TRUE_FALSE
+}
+
+model Exam {
+  id           String        @id @default(cuid())
+  courseId     String
+  course       Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessonId     String?
+  lesson       Lesson?       @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  title        String
+  description  String?
+  durationMin  Int           @default(60)
+  passPercent  Int           @default(50)
+  maxAttempts  Int? // فارغ = بلا حد
+  shuffle      Boolean       @default(false)
+  showAnswers  Boolean       @default(true)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  questions    Question[]
+  attempts     ExamAttempt[]
+}
+
+model Question {
+  id        String       @id @default(cuid())
+  examId    String
+  exam      Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  text      String
+  imageUrl  String?
+  type      QuestionType @default(SINGLE)
+  points    Int          @default(1)
+  sortOrder Int          @default(0)
+  options   Option[]
+}
+
+model Option {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  isCorrect  Boolean  @default(false)
+  sortOrder  Int      @default(0)
+}
+
+model ExamAttempt {
+  id          String    @id @default(cuid())
+  examId      String
+  exam        Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  startedAt   DateTime  @default(now())
+  deadline    DateTime
+  submittedAt DateTime?
+  score       Int?
+  maxScore    Int?
+  passed      Boolean?
+  // { [questionId]: optionId[] }
+  answers     Json      @default("{}")
+  // ترتيب الأسئلة والخيارات المعروض لهذا الطالب
+  layout      Json      @default("{}")
+
+  @@index([examId, studentId])
+}
+
+enum InvoiceStatus {
+  DRAFT
+  DUE
+  PAID
+  CANCELLED
+}
+
+model TeacherInvoice {
+  id          String        @id @default(cuid())
+  number      String        @unique
+  teacherId   String
+  teacher     User          @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  amount      Int // دينار عراقي، 0 = مجانية
+  periodStart DateTime
+  periodEnd   DateTime
+  dueDate     DateTime
+  status      InvoiceStatus @default(DRAFT)
+  paidAt      DateTime?
+  paymentNote String?
+  notes       String?
+  createdAt   DateTime      @default(now())
+
+  @@index([teacherId, status])
+}
+
+model Banner {
+  id          String    @id @default(cuid())
+  imageUrl    String
+  title       String?
+  description String?
+  link        String?
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model MediaFile {
+  id           String   @id @default(cuid())
+  ownerId      String
+  owner        User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  originalName String
+  storedName   String   @unique
+  mimeType     String
+  size         Int
+  groupName    String?
+  isPublic     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  lessons      Lesson[]
+}
+
+enum Platform {
+  ANDROID
+  IOS
+}
+
+model AppVersion {
+  platform    Platform @id
+  storeUrl    String?
+  version     String?
+  forceUpdate Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  actorId        String?
+  actor          User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  impersonatedId String?
+  action         String
+  entity         String?
+  entityId       String?
+  meta           Json?
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model Setting {
+  key   String @id
+  value String
+}

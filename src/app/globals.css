@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: #eef8f1;
+  --color-brand-100: #d6efdd;
+  --color-brand-200: #aedfbd;
+  --color-brand-300: #7cc995;
+  --color-brand-400: #4cb070;
+  --color-brand-500: #2f9657;
+  --color-brand-600: #237a46;
+  --color-brand-700: #1e623a;
+  --color-brand-800: #1b4e31;
+  --color-brand-900: #16402a;
+
+  --color-surface: #f6f8f7;
+  --color-ink: #13201a;
+  --color-muted: #64736b;
+  --color-line: #e3e9e5;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgba(16,40,28,0.04)];
+  }
+  .input {
+    @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-muted/70 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 disabled:bg-surface disabled:text-muted aria-invalid:border-red-400 aria-invalid:ring-red-100;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-ink;
+  }
+  .table-base {
+    @apply w-full text-right text-sm;
+  }
+  .table-base th {
+    @apply bg-surface px-4 py-3 text-xs font-semibold whitespace-nowrap text-muted;
+  }
+  .table-base td {
+    @apply border-t border-line px-4 py-3 align-middle;
+  }
+  .table-base tbody tr {
+    @apply transition hover:bg-brand-50/40;
+  }
+}
+
+/* Protected video watermark drifts slowly across the player. */
+@keyframes watermark-drift {
+  0% { transform: translate(0%, 0%); }
+  25% { transform: translate(-70%, 30%); }
+  50% { transform: translate(-20%, 70%); }
+  75% { transform: translate(-60%, 10%); }
+  100% { transform: translate(0%, 0%); }
+}
+.watermark {
+  animation: watermark-drift 40s linear infinite;
+}
