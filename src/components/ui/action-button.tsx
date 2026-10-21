@@ -10,7 +10,9 @@ export function ActionButton({
   variant = "secondary",
   className,
   size = "sm",
+  showSuccessToast = true,
 }: {
+  showSuccessToast?: boolean;
   size?: ButtonSize;
   action: ServerAction;
   children: React.ReactNode;
@@ -18,7 +20,7 @@ export function ActionButton({
   className?: string;
 }) {
   return (
-    <ActionForm action={action} className="inline">
+    <ActionForm action={action} className="inline" errorAsToast showSuccessToast={showSuccessToast}>
       <SubmitButton variant={variant} size={size} className={className} pendingText="...">
         {children}
       </SubmitButton>

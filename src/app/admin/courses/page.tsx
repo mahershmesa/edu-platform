@@ -33,12 +33,12 @@ export default async function AdminCoursesPage({ searchParams }: { searchParams:
   const canWrite = can(user, "courses.write");
   const canDelete = can(user, "courses.delete");
 
-  const where: Prisma.CourseWhereInput = {
-    ...(q && { OR: [{ title: { contains: q, mode: "insensitive" } }, { description: { contains: q, mode: "insensitive" } }] }),
-    ...(teacher && { teacherId: teacher }),
-    ...(category && { OR: undefined, AND: [{ OR: [{ categoryId: category }, { category: { parentId: category } }] }] }),
-    ...(status && ["DRAFT", "PUBLISHED", "HIDDEN"].includes(status) && { status: status as "DRAFT" }),
-  };
+  const and: Prisma.CourseWhereInput[] = [];
+  if (q) and.push({ OR: [{ title: { contains: q, mode: "insensitive" } }, { description: { contains: q, mode: "insensitive" } }] });
+  if (teacher) and.push({ teacherId: teacher });
+  if (category) and.push({ OR: [{ categoryId: category }, { category: { parentId: category } }] });
+  if (["DRAFT", "PUBLISHED", "HIDDEN"].includes(status)) and.push({ status: status as "DRAFT" | "PUBLISHED" | "HIDDEN" });
+  const where: Prisma.CourseWhereInput = { AND: and };
 
   const [courses, total, teachers, categories] = await Promise.all([
     db.course.findMany({

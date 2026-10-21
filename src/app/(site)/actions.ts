@@ -10,6 +10,7 @@ import { str } from "@/lib/utils";
 import { canWatchLesson } from "@/server/access";
 import { redeemCode } from "@/server/redeem";
 import { GOVERNORATES } from "@/lib/governorates";
+import { DEVICE_REMOVAL_HOURS } from "@/components/site/constants";
 
 export async function redeemAction(targetCourseId: string | null, _prev: ActionState, form: FormData): Promise<ActionState> {
   const user = await getCurrentUser();
@@ -86,8 +87,6 @@ export async function changePasswordAction(_prev: ActionState, form: FormData): 
   await db.session.deleteMany({ where: { userId: user.id, id: { not: user.sessionId } } });
   return done("تم تغيير كلمة المرور، وسُجّل الخروج من بقية الأجهزة");
 }
-
-export const DEVICE_REMOVAL_HOURS = 24;
 
 /** Students may sign a different device out once every 24 hours. */
 export async function removeDeviceAction(deviceId: string): Promise<ActionState> {

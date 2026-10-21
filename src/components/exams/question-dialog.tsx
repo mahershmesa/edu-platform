@@ -34,6 +34,9 @@ function initialOptions(q?: QuestionValues): Opt[] {
 function QuestionForm({ question, onCancel }: { question?: QuestionValues; onCancel: () => void }) {
   const [type, setType] = useState<QType>(question?.type ?? "SINGLE");
   const [options, setOptions] = useState<Opt[]>(() => initialOptions(question));
+  // Controlled so values survive React's form reset after a failed submit.
+  const [text, setText] = useState(question?.text ?? "");
+  const [points, setPoints] = useState(String(question?.points ?? 1));
 
   const changeType = (t: QType) => {
     setType(t);
@@ -60,7 +63,7 @@ function QuestionForm({ question, onCancel }: { question?: QuestionValues; onCan
 
   return (
     <div className="space-y-4">
-      <TextArea name="text" label="نص السؤال" required defaultValue={question?.text} rows={3} />
+      <TextArea name="text" label="نص السؤال" required value={text} onChange={(e) => setText(e.target.value)} rows={3} />
       <div className="grid gap-4 sm:grid-cols-2">
         <SelectField
           name="type"
@@ -69,7 +72,7 @@ function QuestionForm({ question, onCancel }: { question?: QuestionValues; onCan
           onChange={(e) => changeType(e.target.value as QType)}
           options={(Object.keys(QUESTION_TYPE_LABELS) as QType[]).map((k) => ({ value: k, label: QUESTION_TYPE_LABELS[k] }))}
         />
-        <TextField name="points" label="النقاط" type="number" min={1} max={100} defaultValue={question?.points ?? 1} />
+        <TextField name="points" label="النقاط" type="number" min={1} max={100} value={points} onChange={(e) => setPoints(e.target.value)} />
       </div>
 
       <Field name="image" label="صورة للسؤال (اختياري)" hint="JPG أو PNG أو WebP، حتى 5MB. أو ضع رابط صورة.">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { createContext, startTransition, useActionState, useContext, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -9,6 +9,8 @@ import { Alert } from "./alert";
 import { Button, type ButtonSize, type ButtonVariant } from "./button";
 import { FormStateContext } from "./form-context";
 import { useToast } from "./toast";
+
+const FormPendingContext = createContext(false);
 
 export type ServerAction = (prev: ActionState, form: FormData) => Promise<ActionState>;
 
@@ -25,7 +27,8 @@ export function SubmitButton({
   className?: string;
   pendingText?: string;
 }) {
-  const { pending } = useFormStatus();
+  const status = useFormStatus();
+  const pending = useContext(FormPendingContext) || status.pending;
   return (
     <Button type="submit" variant={variant} size={size} disabled={pending} className={className}>
       {pending ? (
@@ -50,7 +53,9 @@ export function ActionForm({
   resetOnSuccess = false,
   className,
   showSuccessToast = true,
+  errorAsToast = false,
 }: {
+  errorAsToast?: boolean;
   action: ServerAction;
   children: React.ReactNode;
   onSuccess?: (state: ActionState) => void;
@@ -58,11 +63,17 @@ export function ActionForm({
   className?: string;
   showSuccessToast?: boolean;
 }) {
-  const [state, formAction] = useActionState(action, {});
+  const [state, formAction, isPending] = useActionState(action, {});
   const toast = useToast();
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const lastHandled = useRef<ActionState | null>(null);
+
+  useEffect(() => {
+    if (state === lastHandled.current || state.ok || !state.error) return;
+    lastHandled.current = state;
+    if (errorAsToast) toast(state.error, "error");
+  }, [state, errorAsToast, toast]);
 
   useEffect(() => {
     if (state === lastHandled.current || !state.ok) return;
@@ -74,9 +85,22 @@ export function ActionForm({
   }, [state, toast, router, onSuccess, resetOnSuccess, showSuccessToast]);
 
   return (
+    <FormPendingContext.Provider value={isPending}>
     <FormStateContext.Provider value={state}>
-      <form ref={formRef} action={formAction} className={className} autoComplete="off" noValidate>
-        {state.error && (
+      <form
+        ref={formRef}
+        // Submitting through onSubmit (not the form `action` prop) stops React 19 from
+        // resetting the fields, so input survives a validation error.
+        onSubmit={(e) => {
+          e.preventDefault();
+          const data = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
+          startTransition(() => formAction(data));
+        }}
+        className={className}
+        autoComplete="off"
+        noValidate
+      >
+        {state.error && !errorAsToast && (
           <Alert tone="error" className="mb-4">
             {state.error}
           </Alert>
@@ -84,5 +108,6 @@ export function ActionForm({
         {children}
       </form>
     </FormStateContext.Provider>
+    </FormPendingContext.Provider>
   );
 }
