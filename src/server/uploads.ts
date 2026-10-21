@@ -21,6 +21,14 @@ const EXT: Record<string, string> = {
 
 export class UploadError extends Error {}
 
+/**
+ * Where file bytes live. "disk" (default) writes to UPLOAD_DIR; "db" stores them in the
+ * MediaFile row, for serverless hosts without a persistent disk. Vercel defaults to "db".
+ */
+export const STORE_IN_DB = process.env.UPLOAD_STORAGE === "db" || (!process.env.UPLOAD_STORAGE && !!process.env.VERCEL);
+/** Serverless platforms reject request bodies above ~4.5MB. */
+const SERVERLESS_MAX_BYTES = 4 * 1024 * 1024;
+
 /** True when the form field holds a real uploaded file. */
 export function hasFile(v: FormDataEntryValue | null): v is File {
   return typeof v === "object" && v !== null && "size" in v && v.size > 0;
@@ -35,13 +43,16 @@ export async function saveUpload(
   opts: { ownerId: string; allowed?: string[]; maxBytes?: number; groupName?: string | null; isPublic?: boolean },
 ) {
   const allowed = opts.allowed ?? IMAGE_TYPES;
-  const maxBytes = opts.maxBytes ?? MAX_IMAGE_BYTES;
+  const maxBytes = STORE_IN_DB ? Math.min(opts.maxBytes ?? MAX_IMAGE_BYTES, SERVERLESS_MAX_BYTES) : (opts.maxBytes ?? MAX_IMAGE_BYTES);
   if (!allowed.includes(file.type)) throw new UploadError("نوع الملف غير مدعوم");
   if (file.size > maxBytes) throw new UploadError(`حجم الملف أكبر من الحد المسموح (${Math.round(maxBytes / 1024 / 1024)}MB)`);
 
   const storedName = `${randomUUID()}.${EXT[file.type] ?? "bin"}`;
-  await mkdir(UPLOAD_DIR, { recursive: true });
-  await writeFile(path.join(UPLOAD_DIR, storedName), Buffer.from(await file.arrayBuffer()));
+  const bytes = Buffer.from(await file.arrayBuffer());
+  if (!STORE_IN_DB) {
+    await mkdir(UPLOAD_DIR, { recursive: true });
+    await writeFile(path.join(UPLOAD_DIR, storedName), bytes);
+  }
   const media = await db.mediaFile.create({
     data: {
       ownerId: opts.ownerId,
@@ -51,6 +62,7 @@ export async function saveUpload(
       size: file.size,
       groupName: opts.groupName ?? null,
       isPublic: opts.isPublic ?? true,
+      data: STORE_IN_DB ? bytes : null,
     },
   });
   return { media, url: `/files/${storedName}` };

@@ -362,6 +362,8 @@ model MediaFile {
   size         Int
   groupName    String?
   isPublic     Boolean  @default(false)
+  // File bytes when UPLOAD_STORAGE=db (hosts without a writable disk, e.g. Vercel)
+  data         Bytes?
   createdAt    DateTime @default(now())
   lessons      Lesson[]
 }

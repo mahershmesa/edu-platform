@@ -11,7 +11,7 @@ import { UPLOAD_DIR } from "@/server/uploads";
 export async function GET(_req: Request, { params }: { params: Promise<{ name: string }> }) {
   const { name } = await params;
   const storedName = path.basename(name);
-  const media = await db.mediaFile.findUnique({ where: { storedName } });
+  const media = await db.mediaFile.findUnique({ where: { storedName }, omit: { data: false } });
   if (!media) return new Response("Not found", { status: 404 });
 
   if (!media.isPublic) {
@@ -31,7 +31,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ name: s
   }
 
   try {
-    const data = await readFile(path.join(UPLOAD_DIR, storedName));
+    const data = media.data ? Buffer.from(media.data) : await readFile(path.join(UPLOAD_DIR, storedName));
     return new Response(data, {
       headers: {
         "Content-Type": media.mimeType,

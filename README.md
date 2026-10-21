@@ -28,6 +28,13 @@ npm run dev                   # http://localhost:3000
 
 لمنع إنشاء البيانات التجريبية: `SEED_DEMO=0 npm run db:seed`.
 
+## النشر على Vercel (مجاني، بدون بطاقة)
+
+1. أنشئ قاعدة بيانات مجانية على [Neon](https://neon.tech) (منطقة Frankfurt) وانسخ رابط الاتصال.
+2. في [Vercel](https://vercel.com) اختر Add New → Project واستورد المستودع.
+3. أضف المتغيرات: `DATABASE_URL` (رابط Neon)، `SEED_ADMIN_EMAIL`، `SEED_ADMIN_PASSWORD`.
+4. اضغط Deploy. ملف `vercel.json` يُنشئ الجداول والبيانات التجريبية تلقائياً أثناء البناء، والملفات المرفوعة تُحفظ في قاعدة البيانات (حد 4MB للملف).
+
 ## النشر بـ Docker
 
 ```bash
