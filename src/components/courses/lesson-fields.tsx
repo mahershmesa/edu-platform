@@ -36,7 +36,7 @@ export function LessonFields({
 
   return (
     <>
-      <Field name="youtube" label="رابط يوتيوب" required hint="يمكن أن يكون الفيديو غير مدرج (Unlisted) على يوتيوب">
+      <Field name="youtube" label="رابط يوتيوب" required hint="للحماية: اجعل الفيديو على يوتيوب «غير مدرج» (Unlisted) وليس «عام»، وفعّل «السماح بالتضمين»">
         <div className="flex gap-2">
           <input
             id="youtube"

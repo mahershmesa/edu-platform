@@ -10,6 +10,7 @@ import { displayPhone } from "@/lib/phone";
 import { cn } from "@/lib/utils";
 import { buttonClass } from "@/components/ui/button";
 import { ProtectedPlayer } from "@/components/site/protected-player";
+import { encodeVideoToken } from "@/lib/video-token";
 import { CompleteButton } from "@/components/site/complete-button";
 
 type Params = { courseId: string; lessonId: string };
@@ -75,7 +76,7 @@ export default async function LearnPage({ params }: { params: Promise<Params> })
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="min-w-0">
-          <ProtectedPlayer videoId={lesson.youtubeId} watermark={watermark} />
+          <ProtectedPlayer key={lesson.id} token={encodeVideoToken(lesson.youtubeId)} watermark={watermark} title={lesson.title} />
           <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">
               <h1 className="text-xl font-extrabold sm:text-2xl">{lesson.title}</h1>
