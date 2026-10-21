@@ -1,3 +1,4 @@
+import { InstallAppButton } from "@/components/pwa/install-app";
 import Link from "next/link";
 import { MessageCircle, Phone } from "lucide-react";
 import { getSettings } from "@/lib/settings";
@@ -18,6 +19,7 @@ export async function SiteFooter() {
           <p className="mt-3 max-w-sm text-sm leading-7 text-muted">
             منصة تعليمية عربية تجمعك بأفضل المدرسين: دروس فيديو منظمة، وامتحانات تفاعلية، وتتبّع لتقدّمك خطوة بخطوة.
           </p>
+          <InstallAppButton className="mt-4" />
         </div>
         <div>
           <p className="font-bold">روابط سريعة</p>

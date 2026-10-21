@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { InstallAppButton } from "@/components/pwa/install-app";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BookOpen, LayoutGrid, LogIn, LogOut, Menu, UserPlus, UserRound, X } from "lucide-react";
@@ -83,6 +84,9 @@ export function MobileNav({ links, user }: { links: { href: string; label: strin
                 </Link>
               )}
             </nav>
+            <div className="px-3 pb-3">
+              <InstallAppButton className="w-full justify-center py-3" />
+            </div>
             <div className="border-t border-line p-3">
               {user ? (
                 <form action={logoutAction}>
