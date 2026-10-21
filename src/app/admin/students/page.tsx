@@ -120,7 +120,7 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
                   const active = s.enrollments.filter((e) => e.status === "ACTIVE").length;
                   return (
                     <tr key={s.id} className={s.status === "SUSPENDED" ? "bg-amber-50/50" : undefined}>
-                      <td className="font-semibold">
+                      <td className="font-semibold whitespace-nowrap">
                         {s.name}
                         {s.governorate && <span className="block text-xs font-normal text-muted">{s.governorate}</span>}
                       </td>
